@@ -10,6 +10,7 @@
    [cmr.common.date-time-parser :as dtp]
    [cmr.common.services.errors :as errors]
    [cmr.common.util :as util]
+   [cmr.message-queue.services.queue :as message-queue]
    [cmr.transmit.config :as tc]
    [cmr.transmit.config :as transmit-config]
    [cmr.transmit.echo.acls :as echo-acls]
@@ -172,3 +173,7 @@
        (errors/throw-service-error
          :unauthorized
          "You do not have permission to perform that action.")))))
+
+(defn subscribe-to-acl-lib
+  "Subscribe to ACL updates"
+  [context])

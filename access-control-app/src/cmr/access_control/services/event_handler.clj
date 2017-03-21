@@ -6,6 +6,7 @@
     [cmr.common.log :refer (debug info warn error)]
     [cmr.message-queue.services.queue :as queue]
     [cmr.transmit.metadata-db2 :as mdb]
+    [cmr.acl.acl-fetcher :as acl-fetcher]
     [cmr.umm-spec.acl-matchers :as acl-matchers]
     [cmr.access-control.services.acl-service :as acl-service]
     [cmr.transmit.config :as transmit-config]
@@ -99,6 +100,11 @@
           (acl-service/update-acl (transmit-config/with-echo-system-token context)
                                   (:concept-id acl-concept) new-acl))))))
 
+(defmethod handle-event [:acl-cache-should-expire :nil]
+  [context {:keys [concept-id object-identity-type]}]
+  (if (some #(= object-identity-type %) config/relevant-acl-identity-types)
+   (acl-fetcher/refresh-acl-cache context)))
+
 (defn subscribe-to-events
   "Subscribe to event messages on various queues"
   [context]
@@ -110,3 +116,7 @@
       (queue/subscribe queue-broker
                        (config/index-queue-name)
                        #(handle-indexing-event context %)))))
+    (dotimes [n (config/index-queue-listener-count)]
+      (queue/subscribe queue-broker
+                       (config/access-control-cache-queue-name)
+                       #(handle-event context %)))))

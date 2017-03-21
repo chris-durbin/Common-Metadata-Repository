@@ -21,6 +21,7 @@
    [cmr.ingest.api.ingest :as ingest-api]
    [cmr.ingest.api.routes :as routes]
    [cmr.ingest.config :as config]
+   [cmr.ingest.services.event-handler :as event-handler]
    [cmr.ingest.services.humanizer-alias-cache :as humanizer-alias-cache]
    [cmr.ingest.services.jobs :as ingest-jobs]
    [cmr.ingest.services.providers-cache :as pc]
@@ -63,12 +64,10 @@
               :scheduler (jobs/create-clustered-scheduler
                           `system-holder :db
                           (conj (ingest-jobs/jobs)
-                                (af/refresh-acl-cache-job "ingest-acl-cache-refresh")
                                 jvm-info/log-jvm-statistics-job))
               :caches {acl/token-imp-cache-key (acl/create-token-imp-cache)
                        pc/providers-cache-key (pc/create-providers-cache)
-                       af/acl-cache-key (af/create-consistent-acl-cache
-                                         [:catalog-item :system-object :provider-object])
+                       af/acl-cache-key (af/create-consistent-acl-cache config/relevant-acl-identity-types)
                        ingest-api/user-id-cache-key (ingest-api/create-user-id-cache)
                        kf/kms-cache-key (kf/create-kms-cache)
                        common-health/health-cache-key (common-health/create-health-cache)
@@ -79,10 +78,17 @@
      (transmit-config/system-with-connections
       sys [:metadata-db :indexer :echo-rest :search :cubby :kms]))))
 
-(def start
+(defn start
+  [system]
   "Performs side effects to initialize the system, acquire resources,
   and start it running. Returns an updated instance of the system."
-  (common-sys/start-fn "ingest" component-order))
+  (let [started-system (common-sys/start system component-order)]
+
+    (when (:queue-broker system)
+      (event-handler/subscribe-to-events {:system started-system}))
+
+    (info "Ingest system started")
+    started-system))
 
 (def stop
   "Performs side effects to shut down the system and release its

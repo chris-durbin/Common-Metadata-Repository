@@ -72,8 +72,7 @@
              :web (web/create-web-server (transmit-config/access-control-port) routes/make-api)
              :nrepl (nrepl/create-nrepl-if-configured (access-control-nrepl-port))
              :queue-broker (queue-broker/create-queue-broker (config/queue-config))
-             :caches {af/acl-cache-key (af/create-acl-cache
-                                        [:system-object :provider-object :single-instance-object])
+             :caches {af/acl-cache-key (af/create-acl-cache config/relevant-acl-identity-types)
                       gf/group-cache-key (gf/create-cache)
                       common-enabled/write-enabled-cache-key (common-enabled/create-write-enabled-cache)
                       common-health/health-cache-key (common-health/create-health-cache)}
@@ -82,8 +81,7 @@
              :relative-root-url (transmit-config/access-control-relative-root-url)
              :scheduler (jobs/create-scheduler
                          `system-holder
-                         [(af/refresh-acl-cache-job "access-control-acl-cache-refresh")
-                          jvm-info/log-jvm-statistics-job])}]
+                         [jvm-info/log-jvm-statistics-job])}]
     (transmit-config/system-with-connections sys [:echo-rest :metadata-db :urs :cubby])))
 
 (defn start

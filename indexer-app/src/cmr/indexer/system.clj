@@ -58,8 +58,7 @@
              :web (web/create-web-server (transmit-config/indexer-port) routes/make-api)
              :nrepl (nrepl/create-nrepl-if-configured (config/indexer-nrepl-port))
              :relative-root-url (transmit-config/indexer-relative-root-url)
-             :caches {af/acl-cache-key (af/create-consistent-acl-cache
-                                        [:catalog-item :system-object :provider-object])
+             :caches {af/acl-cache-key (af/create-consistent-acl-cache config/relevant-acl-identity-types)
                       index-set/index-set-cache-key (consistent-cache/create-consistent-cache
                                                      {:hash-timeout-seconds (index-set-cache-consistent-timeout-seconds)})
                       acl/token-imp-cache-key (acl/create-token-imp-cache)
@@ -70,8 +69,7 @@
                       common-health/health-cache-key (common-health/create-health-cache)}
              :scheduler (jobs/create-scheduler
                          `system-holder
-                         [(af/refresh-acl-cache-job "indexer-acl-cache-refresh")
-                          (kf/refresh-kms-cache-job "indexer-kms-cache-refresh")
+                         [(kf/refresh-kms-cache-job "indexer-kms-cache-refresh")
                           jvm-info/log-jvm-statistics-job])
              :queue-broker (queue-broker/create-queue-broker (config/queue-config))}]
 

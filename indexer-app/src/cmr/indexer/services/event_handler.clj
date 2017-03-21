@@ -1,13 +1,15 @@
 (ns cmr.indexer.services.event-handler
   "Provides functions for subscribing to and handling events."
-  (:require [cmr.common.lifecycle :as lifecycle]
-            [cmr.indexer.config :as config]
-            [cmr.indexer.services.index-service :as indexer]
-            [cmr.indexer.data.collection-granule-aggregation-cache :as cgac]
-            [cmr.message-queue.services.queue :as queue]
-            [cmr.common.log :refer (debug info warn error)]
-            [cmr.common.services.errors :as errors]
-            [cmr.common.concepts :as cc]))
+  (:require
+   [cmr.acl.acl-fetcher :as acl-fetcher]
+   [cmr.common.concepts :as cc]
+   [cmr.common.lifecycle :as lifecycle]
+   [cmr.common.log :refer (debug info warn error)]
+   [cmr.common.services.errors :as errors]
+   [cmr.indexer.config :as config]
+   [cmr.indexer.data.collection-granule-aggregation-cache :as cgac]
+   [cmr.indexer.services.index-service :as indexer]
+   [cmr.message-queue.services.queue :as queue]))
 
 ;; Isolating provider events from other ingest events to prevent them from ever being processed
 ;; by the normal ingest handlers as that can lead to a swamped ingest queue. These handlers
@@ -74,6 +76,17 @@
                   concept-id revision-id)))
       (indexer/force-delete-all-collection-revision context concept-id revision-id))))
 
+(defmethod handle-ingest-event :provider-delete
+  [context _ {:keys [provider-id]}]
+  (indexer/delete-provider context provider-id))
+
+(defn- handle-acl-update-event
+  [context {:keys [action concept-id object-identity-type]}]
+  (if (and
+       (= action :acl-cache-should-expire)
+       (some #(= object-identity-type %) config/relevant-acl-identity-types))
+   (acl-fetcher/refresh-acl-cache context)))
+
 (defn subscribe-to-events
   "Subscribe to event messages on various queues"
   [context]
@@ -89,4 +102,8 @@
     (dotimes [n (config/all-revisions-index-queue-listener-count)]
       (queue/subscribe queue-broker
                        (config/all-revisions-index-queue-name)
-                       #(handle-ingest-event context true %)))))
+                       #(handle-ingest-event context true %)))
+    (dotimes [n (config/acl-cache-refresh-listener-count)]
+      (queue/subscribe queue-broker
+                       (config/access-control-cache-queue-name)
+                       #(handle-acl-update-event context)))))

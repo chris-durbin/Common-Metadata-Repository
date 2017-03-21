@@ -4,17 +4,19 @@
   (:require
     [clojure.edn :as edn]
     [clojure.string :as str]
+    [cmr.access-control.config :as config]
     [cmr.access-control.data.access-control-index :as index]
     [cmr.access-control.data.acls :as acls]
+    [cmr.common-app.services.search.group-query-conditions :as gc]
+    [cmr.common-app.services.search.query-execution :as qe]
+    [cmr.common-app.services.search.query-model :as qm]
     [cmr.common.log :refer [info debug]]
     [cmr.common.mime-types :as mt]
     [cmr.common.services.errors :as errors]
     [cmr.common.util :refer [defn-timed] :as util]
-    [cmr.common-app.services.search.query-execution :as qe]
-    [cmr.common-app.services.search.query-model :as qm]
+    [cmr.message-queue.services.queue :as message-queue]
     [cmr.transmit.echo.tokens :as tokens]
-    [cmr.transmit.metadata-db2 :as mdb]
-    [cmr.common-app.services.search.group-query-conditions :as gc]))
+    [cmr.transmit.metadata-db2 :as mdb]))
 
 (def acl-provider-id
   "The provider ID for all ACLs. Since ACLs are not owned by individual
@@ -65,6 +67,13 @@
                            user (pr-str existing-acl) (pr-str new-acl))
            :delete (format "User: [%s] Deleted ACL [%s]" user (pr-str existing-acl))))))
 
+(defn publish-acl-cache-refresh-message
+  "Takes the current context and signals that the ACL cache should be refreshed"
+  [context]
+  (let [queue-broker (get-in context [:system :queue-broker])
+        exchange-name (config/acl-cache-refresh-exchange-name)]
+    (message-queue/publish-message queue-broker exchange-name :acl-cache-should-expire)))
+
 (defn create-acl
   "Save a new ACL to Metadata DB without any validations. Returns map with concept and revision id of created acl."
   [context acl]
@@ -77,6 +86,7 @@
                      (merge acl-concept (select-keys resp [:concept-id :revision-id]))
                      {:synchronous? true})
     (info (acl-log-message context (merge acl {:concept-id (:concept-id resp)}) :create))
+    (publish-acl-cache-refresh-message context)
     resp))
 
 (defn-timed get-acls-by-condition

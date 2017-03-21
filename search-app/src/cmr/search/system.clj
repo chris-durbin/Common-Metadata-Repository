@@ -18,6 +18,7 @@
    [cmr.common.log :as log :refer (debug info warn error)]
    [cmr.common.nrepl :as nrepl]
    [cmr.common.system :as common-sys]
+   [cmr.message-queue.queue.queue-broker :as queue-broker]
    [cmr.metadata-db.system :as mdb-system]
    [cmr.orbits.orbits-runtime :as orbits-runtime]
    [cmr.search.api.request-context-user-augmenter :as context-augmenter]
@@ -26,6 +27,7 @@
    [cmr.search.data.metadata-retrieval.metadata-cache :as metadata-cache]
    [cmr.search.data.metadata-retrieval.metadata-transformer :as metadata-transformer]
    [cmr.search.models.query :as q]
+   [cmr.search.queue-config :as config]
    [cmr.search.services.acls.collections-cache :as coll-cache]
    [cmr.search.services.query-execution.has-granules-results-feature :as hgrf]
    [cmr.transmit.config :as transmit-config]))
@@ -101,10 +103,10 @@
              :public-conf search-public-conf
              collection-renderer/system-key (collection-renderer/create-collection-renderer)
              orbits-runtime/system-key (orbits-runtime/create-orbits-runtime)
+             :queue-broker (queue-broker/create-queue-broker (config/queue-config))
              :scheduler (jobs/create-scheduler
                          `system-holder
-                         [(af/refresh-acl-cache-job "search-acl-cache-refresh")
-                          idx/refresh-index-names-cache-job
+                         [idx/refresh-index-names-cache-job
                           hgrf/refresh-has-granules-map-job
                           (metadata-cache/refresh-collections-metadata-cache-job)
                           coll-cache/refresh-collections-cache-for-granule-acls-job

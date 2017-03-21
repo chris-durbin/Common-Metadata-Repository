@@ -2,6 +2,10 @@
   (:require [cmr.common.config :as cfg :refer [defconfig]]
             [cmr.message-queue.config :as rmq-conf]))
 
+(def relevant-acl-identity-types
+  "The identity types that the access-control system cares about"
+  [:catalog-item :system-object :provider-object])
+
 (defconfig index-queue-name
   "The queue containing ingest events for the indexer"
   {:default "cmr_index.queue"})
@@ -19,17 +23,26 @@
   bootstrapping the all revisions index."
   {:default "cmr_index.all_revisions_queue"})
 
+(defconfig access-control-cache-queue-name
+  "The queue containing access control events"
+  {:default "cmr_access_control_cache.queue"})
+
 (defconfig all-revisions-index-queue-listener-count
   "Number of worker threads to use for the queue listener for the all revisions queue"
   {:default 2
    :type Long})
 
+<<<<<<< HEAD
 (defconfig provider-queue-name
   "The queue containing provider events like 'index provider collections'."
   {:default "cmr_provider.queue"})
 
 (defconfig provider-queue-listener-count
   "Number of worker threads to use for the queue listener for the provider queue"
+=======
+(defconfig acl-cache-refresh-listener-count
+  "Number of worker thread to listen for acl cache refreshes"
+>>>>>>> d0c8b73... Use RabbitMQ to expire ACL cache in indexer, ingest, and access control
   {:default 2
    :type Long})
 
@@ -46,23 +59,30 @@
   from metadata db."
   {:default "cmr_deleted_collection_revision.exchange"})
 
+(defconfig acl-cache-refresh-exchange-name
+  "The access control exchange to which cache refresh messages are published."
+  {:default "cmr_access_control.cache_refresh"})
+
 (defn queue-config
   "Returns the rabbit mq configuration for the indexer application."
   []
   (assoc (rmq-conf/default-config)
          :queues [(index-queue-name)
                   (all-revisions-index-queue-name)
-                  (provider-queue-name)]
+                  (provider-queue-name)
+                  (access-control-cache-queue-name)]
          :exchanges [(ingest-exchange-name)
                      (deleted-collection-revision-exchange-name)
-                     (provider-exchange-name)]
+                     (provider-exchange-name)
+                     (acl-cache-refresh-exchange-name)]
          :queues-to-exchanges
          {(index-queue-name) [(ingest-exchange-name)]
           (provider-queue-name) [(provider-exchange-name)]
           ;; The all revisions index  queue will be bound to both the ingest exchange and the
           ;; deleted collection revision exchange
           (all-revisions-index-queue-name) [(ingest-exchange-name)
-                                            (deleted-collection-revision-exchange-name)]}))
+                                            (deleted-collection-revision-exchange-name)]
+          (access-control-cache-queue-name) [(acl-cache-refresh-exchange-name)]}))
 
 (defconfig indexer-nrepl-port
   "Port to listen for nREPL connections"

@@ -81,6 +81,7 @@
                       (merge new-concept (select-keys resp [:concept-id :revision-id]))
                       {:synchronous? true})
       (info (acl-util/acl-log-message context new-concept existing-concept :update))
+      (acl-util/publish-acl-cache-refresh-message context)
       resp)))
 
 (defn delete-acl
@@ -97,6 +98,7 @@
       ;; unindexing is synchronous
       (index/unindex-acl context concept-id)
       (info (acl-util/acl-log-message context tombstone acl-concept :delete))
+      (acl-util/publish-acl-cache-refresh-message context)
       resp)))
 
 ;; Member Functions
