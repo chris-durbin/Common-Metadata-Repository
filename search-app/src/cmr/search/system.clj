@@ -29,6 +29,7 @@
    [cmr.search.models.query :as q]
    [cmr.search.queue-config :as config]
    [cmr.search.services.acls.collections-cache :as coll-cache]
+   [cmr.search.services.event-handler :as event-handler]
    [cmr.search.services.query-execution.has-granules-results-feature :as hgrf]
    [cmr.transmit.config :as transmit-config]))
 
@@ -85,7 +86,7 @@
              :nrepl (nrepl/create-nrepl-if-configured (search-nrepl-port))
              ;; Caches added to this list must be explicitly cleared in query-service/clear-cache
              :caches {idx/index-cache-name (mem-cache/create-in-memory-cache)
-                      af/acl-cache-key (af/create-acl-cache [:catalog-item :system-object])
+                      af/acl-cache-key (af/create-acl-cache config/relevant-acl-identity-types)
                       ;; Caches a map of tokens to the security identifiers
                       context-augmenter/token-sid-cache-name (context-augmenter/create-token-sid-cache)
                       context-augmenter/token-user-id-cache-name (context-augmenter/create-token-user-id-cache)
@@ -121,6 +122,9 @@
   (let [started-system (-> this
                            (update-in [:embedded-systems :metadata-db] mdb-system/start)
                            (common-sys/start component-order))]
+    (when (:queue-broker this)
+      (event-handler/subscribe-to-events {:system started-system}))
+
     (info "System started")
     started-system))
 
