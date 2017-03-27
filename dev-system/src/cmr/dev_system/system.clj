@@ -30,6 +30,7 @@
    [cmr.metadata-db.data.memory-db :as memory]
    [cmr.metadata-db.system :as mdb-system]
    [cmr.mock-echo.system :as mock-echo-system]
+   [cmr.search.queue-config :as search-queue-config]
    [cmr.search.system :as search-system]
    [cmr.transmit.config :as transmit-config]
    [cmr.virtual-product.config :as vp-config]
@@ -160,6 +161,7 @@
   (-> (indexer-config/queue-config)
       (rmq-conf/merge-configs (vp-config/queue-config))
       (rmq-conf/merge-configs (access-control-config/queue-config))
+      (rmq-conf/merge-configs (search-queue-config/queue-config))
       mem-queue/create-memory-queue-broker
       wrapper/create-queue-broker-wrapper))
 
@@ -237,9 +239,9 @@
                                [:embedded-systems :metadata-db :db]
                                db-component)
                      (search-system/create-system))]
-    (assoc-in search-app
-              [:embedded-systems :metadata-db :queue-broker]
-              queue-broker)))
+    (-> search-app
+        (assoc-in [:embedded-systems :metadata-db :queue-broker] queue-broker)
+        (assoc :queue-broker queue-broker))))
 
 (defn- base-parse-dev-system-component-type
   "Parse the component type and validate it against the given set."

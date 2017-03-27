@@ -122,7 +122,7 @@
   (let [started-system (-> this
                            (update-in [:embedded-systems :metadata-db] mdb-system/start)
                            (common-sys/start component-order))]
-    (when (:queue-broker this)
+    (when (:queue-broker started-system)
       (event-handler/subscribe-to-events {:system started-system}))
 
     (info "System started")
