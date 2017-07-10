@@ -97,7 +97,7 @@
               ;; See http://stephen.genoprime.com/2013/11/14/uberjar-with-titan-dependency.html
               :uberjar-merge-with {#"org\.apache\.lucene\.codecs\.*" [slurp str spit]}
               :aot :all
-              :jvm-opts ["-Xmx1g"]}
+              :jvm-opts ["-Xmx512m"]}
     :static {}
     ;; This profile is used for linting and static analysis. To run for this
     ;; project, use `lein lint` from inside the project directory. To run for
