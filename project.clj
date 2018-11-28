@@ -16,8 +16,7 @@
   :description "Top level project to support all CMR libraries and applications."
   :plugins [
     [lein-modules "0.3.11"]
-    [lein-shell "0.4.0"]
-    [factual/geo "1.2.0"]]
+    [lein-shell "0.4.0"]]
   :profiles {
     :uberjar {
       :modules {

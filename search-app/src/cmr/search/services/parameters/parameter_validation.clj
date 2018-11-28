@@ -54,7 +54,6 @@
      :multiple-value #{:granule-ur :short-name :instrument :collection-concept-id
                        :producer-granule-id :project :version :native-id :provider :entry-title
                        :platform :sensor :feature-id :crid-id :wkt}
-                       :platform :sensor :wkt}
      :always-case-sensitive #{:echo-granule-id}
      :disallow-pattern #{:echo-granule-id}}))
 
