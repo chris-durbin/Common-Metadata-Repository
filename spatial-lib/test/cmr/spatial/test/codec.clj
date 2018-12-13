@@ -110,4 +110,6 @@
 
  (c/url-decode :line (c/url-encode l)))
 
-
+(comment (def failing-value #cmr.spatial.polygon.Polygon{:coordinate-system :geodetic, :rings [#cmr.spatial.geodetic_ring.GeodeticRing{:points [#=(cmr.spatial.point/point -1.0 1.0 true) #=(cmr.spatial.point/point 1.0 -1.0 true) #=(cmr.spatial.point/point 1.0 -0.5 true) #=(cmr.spatial.point/point -1.0 1.0 true)], :point-set nil, :arcs nil, :course-rotation-direction nil, :contains-north-pole nil, :contains-south-pole nil, :mbr nil, :external-points nil}], :mbr nil})
+  (c/url-decode :wkt (c/url-encode failing-value))
+  (= failing-value (c/url-decode :wkt (c/url-encode failing-value))))
